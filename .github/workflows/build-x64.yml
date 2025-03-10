@@ -57,48 +57,6 @@ jobs:
         fi
       shell: bash
 
-    # 恢复软件包下载缓存 - 优化缓存键以包含分支引用
-    - name: Cache Downloaded Packages
-      if: env.CACHE_ENABLED == 'true'
-      uses: actions/cache/restore@v4
-      id: dl-cache
-      with:
-        path: /workdir/immortalwrt/dl
-        key: dl-${{ steps.get-config-hash.outputs.config_hash }}-${{ github.ref }}-${{ steps.get-date.outputs.date }}
-        restore-keys: |
-          dl-${{ steps.get-config-hash.outputs.config_hash }}-${{ github.ref }}-
-          dl-${{ steps.get-config-hash.outputs.config_hash }}-
-          dl-
-
-    # 恢复工具链和构建目录缓存 - 优化缓存键以包含分支引用
-    - name: Cache Build Directories
-      if: env.CACHE_ENABLED == 'true'
-      uses: actions/cache/restore@v4
-      id: build-cache
-      with:
-        path: |
-          /workdir/immortalwrt/build_dir/host
-          /workdir/immortalwrt/build_dir/toolchain-*
-          /workdir/immortalwrt/staging_dir
-        key: build-${{ runner.os }}-${{ steps.get-config-hash.outputs.config_hash }}-${{ github.ref }}-${{ steps.get-date.outputs.date }}
-        restore-keys: |
-          build-${{ runner.os }}-${{ steps.get-config-hash.outputs.config_hash }}-${{ github.ref }}-
-          build-${{ runner.os }}-${{ steps.get-config-hash.outputs.config_hash }}-
-          build-${{ runner.os }}-
-
-    # 设置 ccache - 优化缓存键以包含分支引用
-    - name: Setup ccache
-      uses: actions/cache/restore@v4
-      if: env.CACHE_ENABLED == 'true'
-      id: ccache
-      with:
-        path: /workdir/immortalwrt/.ccache
-        key: ccache-${{ runner.os }}-${{ steps.get-config-hash.outputs.config_hash }}-${{ github.ref }}-${{ steps.get-date.outputs.date }}
-        restore-keys: |
-          ccache-${{ runner.os }}-${{ steps.get-config-hash.outputs.config_hash }}-${{ github.ref }}-
-          ccache-${{ runner.os }}-${{ steps.get-config-hash.outputs.config_hash }}-
-          ccache-${{ runner.os }}-
-
     # 初始化环境
     - name: Initialization environment
       env:
@@ -128,8 +86,53 @@ jobs:
         # 克隆 ImmortalWrt 源码
         git clone $REPO_URL -b $REPO_BRANCH immortalwrt
         ln -sf /workdir/immortalwrt $GITHUB_WORKSPACE/immortalwrt
-        # 创建 ccache 目录
+        # 创建必要的目录结构
         mkdir -p /workdir/immortalwrt/.ccache
+        mkdir -p /workdir/immortalwrt/dl
+        mkdir -p /workdir/immortalwrt/build_dir/host
+        mkdir -p /workdir/immortalwrt/staging_dir
+
+    # 恢复软件包下载缓存 - 在目录创建后恢复
+    - name: Cache Downloaded Packages
+      if: env.CACHE_ENABLED == 'true'
+      uses: actions/cache/restore@v4
+      id: dl-cache
+      with:
+        path: /workdir/immortalwrt/dl
+        key: dl-${{ steps.get-config-hash.outputs.config_hash }}-${{ github.ref }}-${{ steps.get-date.outputs.date }}
+        restore-keys: |
+          dl-${{ steps.get-config-hash.outputs.config_hash }}-${{ github.ref }}-
+          dl-${{ steps.get-config-hash.outputs.config_hash }}-
+          dl-
+
+    # 恢复工具链和构建目录缓存 - 在目录创建后恢复
+    - name: Cache Build Directories
+      if: env.CACHE_ENABLED == 'true'
+      uses: actions/cache/restore@v4
+      id: build-cache
+      with:
+        path: |
+          /workdir/immortalwrt/build_dir/host
+          /workdir/immortalwrt/build_dir/toolchain-*
+          /workdir/immortalwrt/staging_dir
+        key: build-${{ runner.os }}-${{ steps.get-config-hash.outputs.config_hash }}-${{ github.ref }}-${{ steps.get-date.outputs.date }}
+        restore-keys: |
+          build-${{ runner.os }}-${{ steps.get-config-hash.outputs.config_hash }}-${{ github.ref }}-
+          build-${{ runner.os }}-${{ steps.get-config-hash.outputs.config_hash }}-
+          build-${{ runner.os }}-
+
+    # 设置 ccache - 在目录创建后恢复
+    - name: Setup ccache
+      uses: actions/cache/restore@v4
+      if: env.CACHE_ENABLED == 'true'
+      id: ccache
+      with:
+        path: /workdir/immortalwrt/.ccache
+        key: ccache-${{ runner.os }}-${{ steps.get-config-hash.outputs.config_hash }}-${{ github.ref }}-${{ steps.get-date.outputs.date }}
+        restore-keys: |
+          ccache-${{ runner.os }}-${{ steps.get-config-hash.outputs.config_hash }}-${{ github.ref }}-
+          ccache-${{ runner.os }}-${{ steps.get-config-hash.outputs.config_hash }}-
+          ccache-${{ runner.os }}-
 
     # 加载自定义 feeds 配置
     - name: Load custom feeds
