@@ -3,11 +3,12 @@ name: ImmortalWrt Mvebu Builder
 
 # 触发条件
 on:
+  schedule:
+    # 北京时间(UTC+8)凌晨4点对应的是UTC时间的前一天20点
+    # 所以我们需要设置为 "0 20 */2 * *"
+    - cron: '0 20 */2 * *'
   repository_dispatch:  # 允许通过 API 触发工作流
   workflow_dispatch:    # 允许手动在 GitHub 界面触发工作流
-  # 可以取消注释以下行来添加定时触发
-  # schedule:
-  #   - cron: '0 20 * * *'  # 每天 UTC 20:00 运行 (北京时间凌晨 4:00)
 # 添加这个权限配置
 permissions:
   contents: write    # 用于发布版本和提交代码
