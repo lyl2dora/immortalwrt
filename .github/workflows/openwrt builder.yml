@@ -15,6 +15,9 @@ on:
   # 可以取消注释以下行来添加定时触发
   # schedule:
   #   - cron: '0 20 * * *'  # 每天 UTC 20:00 运行 (北京时间凌晨 4:00)
+# 添加这个权限配置
+permissions:
+  contents: write  # 允许工作流创建 Release 和提交代码
 
 # 环境变量设置
 env:
