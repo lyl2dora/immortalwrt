@@ -8,6 +8,9 @@
 # Blog: https://p3terx.com
 #=============================================================
 
+# 修改默认 IP
+sed -i 's/lan) ipad=${ipaddr:-"192.168.1.1"}/lan) ipad=${ipaddr:-"192.168.3.1"}/g' package/base-files/files/bin/config_generate
+
 # 更精确地替换 PPPoE 的用户名和密码
 sed -i "/proto='pppoe'/,/password=/ s/username='username'/username='27110912915'/g" package/base-files/files/bin/config_generate
 sed -i "/proto='pppoe'/,/password=/ s/password='password'/password='288446'/g" package/base-files/files/bin/config_generate
