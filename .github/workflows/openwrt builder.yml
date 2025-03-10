@@ -10,7 +10,8 @@ on:
   #   - cron: '0 20 * * *'  # 每天 UTC 20:00 运行 (北京时间凌晨 4:00)
 # 添加这个权限配置
 permissions:
-  contents: write  # 允许工作流创建 Release 和提交代码
+  contents: write    # 用于发布版本和提交代码
+  actions: write     # 用于删除工作流运行记录
 
 # 环境变量设置
 env:
