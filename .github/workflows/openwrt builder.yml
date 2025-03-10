@@ -19,8 +19,8 @@ env:
   REPO_BRANCH: master  # 使用的分支
   FEEDS_CONF: feeds.conf.default  # feeds 配置文件
   CONFIG_FILE: .config  # 编译配置文件（根据需要修改）
-  DIY_P1_SH: diy-part1.sh  # 自定义脚本（在更新 feeds 前运行）
-  DIY_P2_SH: diy-part2.sh  # 自定义脚本（在更新 feeds 后运行）
+  DIY_P1_SH: diy-part1-mvebu.sh  # 自定义脚本（在更新 feeds 前运行）
+  DIY_P2_SH: diy-part2-mvebu.sh  # 自定义脚本（在更新 feeds 后运行）
   UPLOAD_BIN_DIR: false  # 是否上传整个 bin 目录
   UPLOAD_FIRMWARE: true  # 是否上传固件
   UPLOAD_RELEASE: true  # 是否创建发布版本
