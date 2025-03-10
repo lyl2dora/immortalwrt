@@ -11,6 +11,31 @@
 # 修改默认 IP
 sed -i 's/lan) ipad=${ipaddr:-"192.168.1.1"}/lan) ipad=${ipaddr:-"192.168.3.1"}/g' package/base-files/files/bin/config_generate
 
+# 交换 WAN 和 LAN 接口分配
+echo "修改网络接口分配：eth0->WAN，eth1->LAN"
+cat > package/base-files/files/etc/board.d/99-default_network <<EOF
+#!/bin/sh
+#
+# Copyright (C) 2013-2015 OpenWrt.org
+#
+
+. /lib/functions/uci-defaults.sh
+
+board_config_update
+
+json_is_a network object && exit 0
+
+ucidef_set_interface_lan 'eth1'
+[ -d /sys/class/net/eth0 ] && ucidef_set_interface_wan 'eth0'
+
+board_config_flush
+
+exit 0
+EOF
+
+# 确保脚本有执行权限
+chmod +x package/base-files/files/etc/board.d/99-default_network
+
 # 更精确地替换 PPPoE 的用户名和密码
 sed -i "/proto='pppoe'/,/password=/ s/username='username'/username='27110912915'/g" package/base-files/files/bin/config_generate
 sed -i "/proto='pppoe'/,/password=/ s/password='password'/password='288446'/g" package/base-files/files/bin/config_generate
