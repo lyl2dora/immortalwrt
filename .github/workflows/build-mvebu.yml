@@ -18,7 +18,7 @@ env:
   REPO_URL: https://github.com/immortalwrt/immortalwrt  # ImmortalWrt 源代码仓库地址
   REPO_BRANCH: master  # 使用的分支
   FEEDS_CONF: feeds.conf.default  # feeds 配置文件
-  CONFIG_FILE: .config  # 编译配置文件（根据需要修改）
+  CONFIG_FILE: .config.mvebu  # 编译配置文件（根据需要修改）
   DIY_P1_SH: diy-part1-mvebu.sh  # 自定义脚本（在更新 feeds 前运行）
   DIY_P2_SH: diy-part2-mvebu.sh  # 自定义脚本（在更新 feeds 后运行）
   UPLOAD_BIN_DIR: false  # 是否上传整个 bin 目录
