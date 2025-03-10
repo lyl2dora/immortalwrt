@@ -1,1 +1,301 @@
+# 工作流名称
+name: ImmortalWrt Builder
 
+# 触发条件
+on:
+  repository_dispatch:  # 允许通过 API 触发工作流
+  workflow_dispatch:    # 允许手动在 GitHub 界面触发工作流
+  # 可以取消注释以下行来添加定时触发
+  # schedule:
+  #   - cron: '0 20 * * *'  # 每天 UTC 20:00 运行 (北京时间凌晨 4:00)
+# 添加这个权限配置
+permissions:
+  contents: write    # 用于发布版本和提交代码
+  actions: write     # 用于删除工作流运行记录
+
+# 环境变量设置
+env:
+  REPO_URL: https://github.com/immortalwrt/immortalwrt  # ImmortalWrt 源代码仓库地址
+  REPO_BRANCH: master  # 使用的分支
+  FEEDS_CONF: feeds.conf.default  # feeds 配置文件
+  CONFIG_FILE: .config.x64  # 编译配置文件（根据需要修改）
+  DIY_P1_SH: diy-part1-x64.sh  # 自定义脚本（在更新 feeds 前运行）
+  DIY_P2_SH: diy-part2-x64.sh  # 自定义脚本（在更新 feeds 后运行）
+  UPLOAD_BIN_DIR: false  # 是否上传整个 bin 目录
+  UPLOAD_FIRMWARE: true  # 是否上传固件
+  UPLOAD_RELEASE: true  # 是否创建发布版本
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # 使用仓库密钥
+  TZ: Asia/Shanghai  # 时区设置
+  CACHE_ENABLED: true  # 是否启用缓存（可根据需要设置为 false）
+
+# 任务定义
+jobs:
+  build:
+    runs-on: ubuntu-22.04  # 在 Ubuntu 22.04 环境运行
+
+    steps:
+    # 检出代码
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    # 获取当前日期，用于缓存键
+    - name: Get Date
+      id: get-date
+      run: |
+        echo "date=$(date +"%Y%m%d")" >> $GITHUB_OUTPUT
+      shell: bash
+
+    # 获取配置文件哈希，用于缓存键
+    - name: Get Config Hash
+      id: get-config-hash
+      run: |
+        if [ -f "$CONFIG_FILE" ]; then
+          echo "config_hash=$(md5sum $CONFIG_FILE | awk '{print $1}')" >> $GITHUB_OUTPUT
+        else
+          echo "config_hash=default" >> $GITHUB_OUTPUT
+        fi
+      shell: bash
+
+    # 恢复软件包下载缓存 - 优化缓存键以包含分支引用
+    - name: Cache Downloaded Packages
+      if: env.CACHE_ENABLED == 'true'
+      uses: actions/cache/restore@v4
+      id: dl-cache
+      with:
+        path: /workdir/immortalwrt/dl
+        key: dl-${{ steps.get-config-hash.outputs.config_hash }}-${{ github.ref }}-${{ steps.get-date.outputs.date }}
+        restore-keys: |
+          dl-${{ steps.get-config-hash.outputs.config_hash }}-${{ github.ref }}-
+          dl-${{ steps.get-config-hash.outputs.config_hash }}-
+          dl-
+
+    # 恢复工具链和构建目录缓存 - 优化缓存键以包含分支引用
+    - name: Cache Build Directories
+      if: env.CACHE_ENABLED == 'true'
+      uses: actions/cache/restore@v4
+      id: build-cache
+      with:
+        path: |
+          /workdir/immortalwrt/build_dir/host
+          /workdir/immortalwrt/build_dir/toolchain-*
+          /workdir/immortalwrt/staging_dir
+        key: build-${{ runner.os }}-${{ steps.get-config-hash.outputs.config_hash }}-${{ github.ref }}-${{ steps.get-date.outputs.date }}
+        restore-keys: |
+          build-${{ runner.os }}-${{ steps.get-config-hash.outputs.config_hash }}-${{ github.ref }}-
+          build-${{ runner.os }}-${{ steps.get-config-hash.outputs.config_hash }}-
+          build-${{ runner.os }}-
+
+    # 设置 ccache - 优化缓存键以包含分支引用
+    - name: Setup ccache
+      uses: actions/cache/restore@v4
+      if: env.CACHE_ENABLED == 'true'
+      id: ccache
+      with:
+        path: /workdir/immortalwrt/.ccache
+        key: ccache-${{ runner.os }}-${{ steps.get-config-hash.outputs.config_hash }}-${{ github.ref }}-${{ steps.get-date.outputs.date }}
+        restore-keys: |
+          ccache-${{ runner.os }}-${{ steps.get-config-hash.outputs.config_hash }}-${{ github.ref }}-
+          ccache-${{ runner.os }}-${{ steps.get-config-hash.outputs.config_hash }}-
+          ccache-${{ runner.os }}-
+
+    # 初始化环境
+    - name: Initialization environment
+      env:
+        DEBIAN_FRONTEND: noninteractive  # 禁用交互式前端
+      run: |
+        # 清理不需要的文件和目录，释放空间
+        sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+        sudo docker image prune --all --force
+        # 更新 apt 并安装编译 ImmortalWrt 所需的依赖包
+        sudo -E apt-get -qq update
+        sudo -E apt-get -qq install ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential bzip2 ccache clang cmake cpio curl device-tree-compiler ecj fastjar flex gawk gettext gcc-multilib g++-multilib git gnutls-dev gperf haveged help2man intltool lib32gcc-s1 libc6-dev-i386 libelf-dev libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses-dev libpython3-dev libreadline-dev libssl-dev libtool libyaml-dev libz-dev lld llvm lrzsz mkisofs msmtp nano ninja-build p7zip p7zip-full patch pkgconf python3 python3-pip python3-ply python3-docutils python3-pyelftools qemu-utils re2c rsync scons squashfs-tools subversion swig texinfo uglifyjs upx-ucl unzip vim wget xmlto xxd zlib1g-dev zstd
+        # 清理 apt 缓存
+        sudo -E apt-get -qq autoremove --purge
+        sudo -E apt-get -qq clean
+        # 设置时区
+        sudo timedatectl set-timezone "$TZ"
+        # 创建工作目录
+        sudo mkdir -p /workdir
+        sudo chown $USER:$GROUPS /workdir
+
+    # 克隆 ImmortalWrt 源代码
+    - name: Clone source code
+      working-directory: /workdir
+      run: |
+        # 显示磁盘使用情况
+        df -hT $PWD
+        # 克隆 ImmortalWrt 源码
+        git clone $REPO_URL -b $REPO_BRANCH immortalwrt
+        ln -sf /workdir/immortalwrt $GITHUB_WORKSPACE/immortalwrt
+        # 创建 ccache 目录
+        mkdir -p /workdir/immortalwrt/.ccache
+
+    # 加载自定义 feeds 配置
+    - name: Load custom feeds
+      run: |
+        # 如果存在自定义 feeds 配置，则替换默认配置
+        [ -e $FEEDS_CONF ] && mv $FEEDS_CONF immortalwrt/feeds.conf.default
+        # 赋予自定义脚本执行权限
+        chmod +x $DIY_P1_SH
+        cd immortalwrt
+        # 执行第一个自定义脚本（在更新 feeds 前）
+        $GITHUB_WORKSPACE/$DIY_P1_SH
+
+    # 更新 feeds（软件包源）
+    - name: Update feeds
+      run: cd immortalwrt && ./scripts/feeds update -a
+
+    # 安装 feeds 中的所有软件包
+    - name: Install feeds
+      run: cd immortalwrt && ./scripts/feeds install -a
+
+    # 加载自定义配置
+    - name: Load custom configuration
+      run: |
+        # 如果存在自定义文件，则移动到 immortalwrt/files 目录
+        [ -e files ] && mv files immortalwrt/files
+        # 如果存在配置文件，则移动到 immortalwrt/.config
+        [ -e $CONFIG_FILE ] && mv $CONFIG_FILE immortalwrt/.config
+        # 赋予第二个自定义脚本执行权限
+        chmod +x $DIY_P2_SH
+        cd immortalwrt
+        # 执行第二个自定义脚本（在更新 feeds 后）
+        $GITHUB_WORKSPACE/$DIY_P2_SH
+        # 启用 ccache 加速编译
+        echo "CONFIG_CCACHE=y" >> .config
+
+    # 下载编译所需的软件包
+    - name: Download package
+      id: package
+      run: |
+        cd immortalwrt
+        # 生成默认配置
+        make defconfig
+        # 下载所需的软件包，使用 8 线程
+        make download -j8
+        # 查找并显示小于 1024 字节的下载文件（可能是下载失败的文件）
+        find dl -size -1024c -exec ls -l {} \;
+        # 删除小于 1024 字节的文件
+        find dl -size -1024c -exec rm -f {} \;
+
+    # 编译固件 - 线程优化
+    - name: Compile the firmware
+      id: compile
+      run: |
+        cd immortalwrt
+        # 显示使用的线程数
+        echo -e "$(nproc) thread compile"
+        # 使用线程数+1的方式进行编译，提高效率
+        make -j$(($(nproc) + 1)) || make -j1 || make -j1 V=s
+        # 设置编译成功状态
+        echo "status=success" >> $GITHUB_OUTPUT
+        # 提取设备名称
+        grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/.*DEVICE_(.*)=y/\1/' > DEVICE_NAME
+        # 如果有设备名称，则添加到环境变量
+        [ -s DEVICE_NAME ] && echo "DEVICE_NAME=_$(cat DEVICE_NAME)" >> $GITHUB_ENV
+        # 添加日期时间到环境变量
+        echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
+
+    # 保存下载缓存 - 优化缓存键以包含分支引用
+    - name: Save Downloaded Packages Cache
+      uses: actions/cache/save@v4
+      if: env.CACHE_ENABLED == 'true' && steps.compile.outputs.status == 'success'
+      with:
+        path: /workdir/immortalwrt/dl
+        key: ${{ steps.dl-cache.outputs.cache-primary-key || format('dl-{0}-{1}-{2}', steps.get-config-hash.outputs.config_hash, github.ref, steps.get-date.outputs.date) }}
+
+    # 保存构建目录缓存 - 优化缓存键以包含分支引用
+    - name: Save Build Cache
+      uses: actions/cache/save@v4
+      if: env.CACHE_ENABLED == 'true' && steps.compile.outputs.status == 'success'
+      with:
+        path: |
+          /workdir/immortalwrt/build_dir/host
+          /workdir/immortalwrt/build_dir/toolchain-*
+          /workdir/immortalwrt/staging_dir
+        key: ${{ steps.build-cache.outputs.cache-primary-key || format('build-{0}-{1}-{2}-{3}', runner.os, steps.get-config-hash.outputs.config_hash, github.ref, steps.get-date.outputs.date) }}
+
+    # 保存 ccache 缓存 - 优化缓存键以包含分支引用
+    - name: Save ccache
+      uses: actions/cache/save@v4
+      if: env.CACHE_ENABLED == 'true' && steps.compile.outputs.status == 'success'
+      with:
+        path: /workdir/immortalwrt/.ccache
+        key: ${{ steps.ccache.outputs.cache-primary-key || format('ccache-{0}-{1}-{2}-{3}', runner.os, steps.get-config-hash.outputs.config_hash, github.ref, steps.get-date.outputs.date) }}
+
+    # 检查空间使用情况
+    - name: Check space usage
+      if: (!cancelled())
+      run: df -hT
+
+    # 上传 bin 目录（如果设置了 UPLOAD_BIN_DIR）
+    - name: Upload bin directory
+      uses: actions/upload-artifact@v4
+      if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
+      with:
+        name: ImmortalWrt_bin${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
+        path: immortalwrt/bin
+        retention-days: 7
+
+    # 整理文件（删除不需要的 packages 目录）
+    - name: Organize files
+      id: organize
+      if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
+      run: |
+        cd immortalwrt/bin/targets/*/*
+        rm -rf packages
+        echo "FIRMWARE=$PWD" >> $GITHUB_ENV
+        echo "status=success" >> $GITHUB_OUTPUT
+
+    # 上传固件目录 - 优化上传配置
+    - name: Upload firmware directory
+      uses: actions/upload-artifact@v4
+      if: steps.organize.outputs.status == 'success' && !cancelled()
+      with:
+        name: ImmortalWrt_firmware${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
+        path: ${{ env.FIRMWARE }}
+        retention-days: 14
+        if-no-files-found: error  # 如果没有找到文件则报错
+        compression-level: 9  # 最高压缩级别
+
+    # 生成发布标签（如果设置了 UPLOAD_RELEASE）
+    - name: Generate release tag
+      id: tag
+      if: env.UPLOAD_RELEASE == 'true' && !cancelled()
+      run: |
+        # 使用日期时间作为发布标签
+        echo "release_tag=$(date +"%Y.%m.%d-%H%M")" >> $GITHUB_OUTPUT
+        # 创建发布说明文件
+        touch release.txt
+        [ -s DEVICE_NAME ] && echo "设备: $(cat DEVICE_NAME)" >> release.txt
+        echo "编译时间: $(date +"%Y-%m-%d %H:%M:%S")" >> release.txt
+        echo "status=success" >> $GITHUB_OUTPUT
+
+    # 将固件上传到 GitHub Releases
+    - name: Upload firmware to release
+      uses: softprops/action-gh-release@master
+      if: steps.tag.outputs.status == 'success' && !cancelled()
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.tag.outputs.release_tag }}
+        body_path: release.txt
+        files: ${{ env.FIRMWARE }}/*
+        generate_release_notes: true
+
+    # 删除旧的工作流运行记录
+    - name: Delete workflow runs
+      uses: Mattraks/delete-workflow-runs@main
+      with:
+        retain_days: 0  # 不保留任何天数
+        keep_minimum_runs: 3  # 至少保留 3 次运行记录
+
+    # 删除旧的发布版本
+    - name: Remove old Releases
+      uses: dev-drprasad/delete-older-releases@master
+      if: env.UPLOAD_RELEASE == 'true' && !cancelled()
+      with:
+        keep_latest: 3  # 保留最新的 3 个版本
+        delete_tags: true  # 同时删除标签
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
