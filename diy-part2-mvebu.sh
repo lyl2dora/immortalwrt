@@ -9,8 +9,8 @@
 #=============================================================
 
 # 更精确地替换 PPPoE 的用户名和密码
-sed -i "/proto='pppoe'/,/password=/ s/username='username'/username='07159432516'/g" package/base-files/files/bin/config_generate
-sed -i "/proto='pppoe'/,/password=/ s/password='password'/password='134520'/g" package/base-files/files/bin/config_generate
+sed -i "/proto='pppoe'/,/password=/ s/username='username'/username='$PPPOE_USERNAME1'/g" package/base-files/files/bin/config_generate
+sed -i "/proto='pppoe'/,/password=/ s/password='password'/password='$PPPOE_PASSWORD1'/g" package/base-files/files/bin/config_generate
 
 # 更加精确的替换，包含完整的函数名和上下文
 sed -i '/ucidef_set_interface "wan" device/,+5 s/protocol "${2:-dhcp}"/protocol "${2:-pppoe}"/g' package/base-files/files/lib/functions/uci-defaults.sh
