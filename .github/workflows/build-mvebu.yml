@@ -161,6 +161,9 @@ jobs:
 
     # 加载自定义配置
     - name: Load custom configuration
+      env:
+        PPPOE_USERNAME1: ${{ secrets.PPPOE_USERNAME1 }}
+        PPPOE_PASSWORD1: ${{ secrets.PPPOE_PASSWORD1 }}
       run: |
         # 如果存在自定义文件，则移动到 immortalwrt/files 目录
         [ -e files ] && mv files immortalwrt/files
