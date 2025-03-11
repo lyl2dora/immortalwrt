@@ -142,9 +142,6 @@ jobs:
 
     # 加载自定义 feeds 配置
     - name: Load custom feeds
-      env:
-        PPPOE_USERNAME2: ${{ secrets.PPPOE_USERNAME2 }}
-        PPPOE_PASSWORD2: ${{ secrets.PPPOE_PASSWORD2 }}
       run: |
         # 如果存在自定义 feeds 配置，则替换默认配置
         [ -e $FEEDS_CONF ] && mv $FEEDS_CONF immortalwrt/feeds.conf.default
@@ -164,6 +161,9 @@ jobs:
 
     # 加载自定义配置
     - name: Load custom configuration
+      env:
+        PPPOE_USERNAME2: ${{ secrets.PPPOE_USERNAME2 }}
+        PPPOE_PASSWORD2: ${{ secrets.PPPOE_PASSWORD2 }}
       run: |
         # 如果存在自定义文件，则移动到 immortalwrt/files 目录
         [ -e files ] && mv files immortalwrt/files
