@@ -182,6 +182,8 @@ jobs:
       id: package
       run: |
         cd immortalwrt
+        # 清除 Go 模块缓存，解决 ddns-go 依赖问题
+        rm -rf dl/go-mod-cache
         # 生成默认配置
         make defconfig
         # 下载所需的软件包，使用 8 线程
