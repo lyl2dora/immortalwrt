@@ -9,4 +9,8 @@ sed -i '/ucidef_set_interface "wan" device/,+5 s/protocol "${2:-dhcp}"/protocol 
 
 #修改默认时区
 sed -i "s/timezone='GMT0'/timezone='Asia\/Shanghai'/" package/base-files/files/bin/config_generate
+
+#修改默认shell为bash
+sed -i 's|root:x:0:0:root:/root:/bin/ash|root:x:0:0:root:/root:/bin/bash|' package/base-files/files/etc/passwd
+        
 # 如果需要，还可以添加其他修改
