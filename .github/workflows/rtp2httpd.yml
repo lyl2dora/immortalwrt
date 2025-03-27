@@ -45,7 +45,7 @@ jobs:
           NO_SHFMT_CHECK: true
           PACKAGES: ${{ matrix.arch == 'x86_64' && 'luci-app-rtp2httpd' || 'rtp2httpd' }}
           BUILD_APK: true  # 启用 APK 构建而不是 IPK
-          CONTAINER: immortalwrt/sdk:${{ matrix.sdk }}
+          CONTAINER: openwrt/sdk:${{ matrix.sdk }}
           
       - name: Upload artifacts
         uses: actions/upload-artifact@v4.6.2
