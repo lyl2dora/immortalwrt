@@ -16,9 +16,9 @@ jobs:
       matrix:
         include:
           - arch: x86_64
-            sdk: x86_64-main
+            sdk: x86-64
           - arch: aarch64_cortex-a72
-            sdk: mvebu-cortexa72-main
+            sdk: mvebu-cortex-a72
     steps:
       - uses: actions/checkout@v4
         with:
@@ -40,12 +40,12 @@ jobs:
       - name: Build
         uses: openwrt/gh-action-sdk@v7
         env:
-          ARCH: ${{ matrix.arch }}-${{ matrix.sdk }}
+          ARCH: ${{ matrix.arch }}
           FEED_DIR: ${{ github.workspace }}/openwrt-support
           NO_SHFMT_CHECK: true
           PACKAGES: ${{ matrix.arch == 'x86_64' && 'luci-app-rtp2httpd' || 'rtp2httpd' }}
           BUILD_APK: true  # 启用 APK 构建而不是 IPK
-          SDK_SRC: immortalwrt  # 使用 ImmortalWRT 源
+          CONTAINER: immortalwrt/sdk:${{ matrix.sdk }}
           
       - name: Upload artifacts
         uses: actions/upload-artifact@v4.6.2
