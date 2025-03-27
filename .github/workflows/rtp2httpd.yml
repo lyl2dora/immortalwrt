@@ -17,8 +17,11 @@ jobs:
         arch:
           - x86_64
           - aarch64_cortex-a72
-        sdk:
-          - ${{ matrix.arch == 'x86_64' && 'x86_64-main' || 'mvebu-cortexa72-main' }}
+        include:
+          - arch: x86_64
+            sdk: x86_64-main
+          - arch: aarch64_cortex-a72
+            sdk: mvebu-cortexa72-main
     steps:
       - uses: actions/checkout@v4
         with:
