@@ -45,7 +45,7 @@ jobs:
           NO_SHFMT_CHECK: true
           PACKAGES: ${{ matrix.arch == 'x86_64' && 'luci-app-rtp2httpd' || 'rtp2httpd' }}
           BUILD_APK: true  # 启用 APK 构建而不是 IPK
-          CONTAINER: openwrt/sdk:${{ matrix.sdk }}
+          CONTAINER: openwrt/sdk
           
       - name: Upload artifacts
         uses: actions/upload-artifact@v4.6.2
@@ -64,7 +64,7 @@ jobs:
             # 如果是手动触发或 push 触发则创建新的 release
             RELEASE_DATE="$(date +%Y%m%d)"
             RELEASE_NAME="Build-${RELEASE_DATE}"
-            gh release create "build-${RELEASE_DATE}" --title "${RELEASE_NAME}" --repo ${{ github.repository }} bin/packages/${{ matrix.arch }}/action/*.apk
+            gh release create "build-${RELEASE_DATE}" --title "${RELEASE_NAME}" --repo ${{ github.repository }} bin/packages/${{ matrix.arch }}/action/*.apk --generate-notes
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
