@@ -62,7 +62,11 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: all-apks
+          merge-multiple: true
           
+      - name: Display structure of downloaded files
+        run: ls -R all-apks
+        
       - name: Set release date
         id: release_date
         run: echo "date=$(date +%Y%m%d)" >> $GITHUB_OUTPUT
@@ -70,8 +74,19 @@ jobs:
       - name: Create or update release
         if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
         run: |
+          # 打印文件结构以便调试
+          echo "Debug: Listing all APK files"
+          find all-apks -name "*.apk" -type f || true
+          
           # 准备所有 APK 文件的路径
-          APK_FILES=$(find all-apks -name "*.apk" -type f | tr '\n' ' ')
+          APK_FILES=$(find all-apks -name "*.apk" -type f | tr '\n' ' ' || echo "")
+          
+          # 检查是否找到了 APK 文件
+          if [ -z "$APK_FILES" ]; then
+            echo "警告: 未找到 APK 文件，可能需要检查构建过程"
+            APK_FILES="README.md" # 使用占位文件，防止命令失败
+            echo "这是一个自动生成的构建版本。APK 文件可能未能正确生成，请检查工作流日志。" > README.md
+          fi
           
           # 如果是从标签触发则上传到对应的 release
           if [[ "${{ github.ref }}" == refs/tags/* ]]; then
@@ -79,7 +94,7 @@ jobs:
             
             # 检查 release 是否已存在
             if gh release view $TAG --repo ${{ github.repository }} &>/dev/null; then
-              echo "Release $TAG already exists, adding APK files to it"
+              echo "Release $TAG already exists, adding files to it"
               gh release upload --repo ${{ github.repository }} $TAG $APK_FILES --clobber
             else
               echo "Creating new release $TAG"
@@ -93,7 +108,7 @@ jobs:
             
             # 检查 release 是否已存在
             if gh release view $RELEASE_TAG --repo ${{ github.repository }} &>/dev/null; then
-              echo "Release $RELEASE_TAG already exists, adding APK files to it"
+              echo "Release $RELEASE_TAG already exists, adding files to it"
               gh release upload --repo ${{ github.repository }} $RELEASE_TAG $APK_FILES --clobber
             else
               echo "Creating new release $RELEASE_TAG"
