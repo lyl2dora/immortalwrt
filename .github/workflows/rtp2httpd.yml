@@ -14,9 +14,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch:
-          - x86_64
-          - aarch64_cortex-a72
         include:
           - arch: x86_64
             sdk: x86_64-main
@@ -44,12 +41,11 @@ jobs:
         uses: openwrt/gh-action-sdk@v7
         env:
           ARCH: ${{ matrix.arch }}-${{ matrix.sdk }}
-          SDK_SRC: immortalwrt
           FEED_DIR: ${{ github.workspace }}/openwrt-support
-          SDK_SRC: immortalwrt
           NO_SHFMT_CHECK: true
           PACKAGES: ${{ matrix.arch == 'x86_64' && 'luci-app-rtp2httpd' || 'rtp2httpd' }}
           BUILD_APK: true  # 启用 APK 构建而不是 IPK
+          SDK_SRC: immortalwrt  # 使用 ImmortalWRT 源
           
       - name: Upload artifacts
         uses: actions/upload-artifact@v4.6.2
