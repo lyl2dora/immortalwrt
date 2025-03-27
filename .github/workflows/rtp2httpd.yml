@@ -18,7 +18,7 @@ jobs:
           - x86_64
           - aarch64_cortex-a72
         sdk:
-          - "24.10"
+          - ${{ matrix.arch == 'x86_64' && 'x86_64-main' || 'mvebu-cortexa72-main' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -41,6 +41,7 @@ jobs:
         uses: openwrt/gh-action-sdk@v7
         env:
           ARCH: ${{ matrix.arch }}-${{ matrix.sdk }}
+          SDK_SRC: immortalwrt
           FEED_DIR: ${{ github.workspace }}/openwrt-support
           SDK_SRC: immortalwrt
           NO_SHFMT_CHECK: true
