@@ -1,21 +1,13 @@
-name: 构建 rtp2httpd 包
-
+name: ImmortalWRT APK Release
 on:
+  workflow_dispatch:  # 允许手动触发
   push:
-    branches: [ main ]
     paths:
-      - 'openwrt-support/**'
-  pull_request:
-    branches: [ main ]
-    paths:
-      - 'openwrt-support/**'
-  workflow_dispatch:  # 用于手动触发
-  repository_dispatch:
-    types: [stackia_rtp2httpd_update]
+      - 'openwrt-support/**'  # 当 openwrt-support 路径有更改时触发
 
 jobs:
   build:
-    name: ${{ matrix.arch }}
+    name: ${{ matrix.arch }}-${{ matrix.sdk }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -25,166 +17,54 @@ jobs:
         arch:
           - x86_64
           - aarch64_cortex-a72
-        
+        sdk:
+          - "24.10"
     steps:
-    - name: 检出代码
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-        
-    - name: 监控上游更新
-      if: github.event_name == 'repository_dispatch'
-      run: |
-        # 克隆上游 rtp2httpd 仓库
-        git clone https://github.com/stackia/rtp2httpd.git upstream
-        
-        # 复制最新的 openwrt-support 目录
-        rm -rf openwrt-support || true
-        cp -r upstream/openwrt-support ./
-        
-        # 提交更改
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git add openwrt-support
-        git commit -m "自动更新 openwrt-support 目录" || echo "没有更改需要提交"
-        git push
-    
-    - name: 设置源代码结构
-      run: |
-        # 将源代码移动到 openwrt-support/rtp2httpd/src 目录
-        # 创建临时目录以便移动文件
-        mkdir -p temp_src
-        find . -maxdepth 1 -not -path "./openwrt-support*" -not -path "." -not -path "./.git*" -exec mv {} temp_src/ \;
-        mkdir -p openwrt-support/rtp2httpd/src
-        mv temp_src/* openwrt-support/rtp2httpd/src/ || true
-        rmdir temp_src || true
-    
-    - name: 设置构建环境
-      run: |
-        # 安装必要的依赖
-        sudo apt-get update
-        sudo apt-get install -y build-essential clang flex bison g++ gawk \
-        gcc-multilib g++-multilib gettext git libncurses-dev libssl-dev \
-        python3 rsync unzip zlib1g-dev file wget
-        
-        # 释放磁盘空间
-        sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
-        sudo apt-get clean
-    
-    - name: 构建 ImmortalWrt 包
-      run: |
-        # 克隆 ImmortalWrt
-        git clone https://github.com/immortalwrt/immortalwrt.git
-        cd immortalwrt
-        git checkout master  # 使用master分支 (24.10版本)
-        
-        # 更新 feeds
-        ./scripts/feeds update -a
-        ./scripts/feeds install -a
-        
-        # 创建软件包目录
-        mkdir -p package/rtp2httpd
-        cp -r ../openwrt-support/rtp2httpd/* package/rtp2httpd/
-        
-        # 如果存在 luci-app-rtp2httpd，也一并复制
-        if [ -d "../openwrt-support/luci-app-rtp2httpd" ]; then
-          mkdir -p package/luci-app-rtp2httpd
-          cp -r ../openwrt-support/luci-app-rtp2httpd/* package/luci-app-rtp2httpd/
-        fi
-        
-        # 设置配置
-        if [[ "${{ matrix.arch }}" == "x86_64" ]]; then
-          cat > .config <<EOF
-CONFIG_TARGET_x86=y
-CONFIG_TARGET_x86_64=y
-CONFIG_TARGET_x86_64_DEVICE_generic=y
-CONFIG_TARGET_ROOTFS_TARGZ=y
-CONFIG_TARGET_ROOTFS_EXT4FS=y
-CONFIG_TARGET_ROOTFS_SQUASHFS=y
-CONFIG_TARGET_IMAGES_GZIP=y
-CONFIG_PACKAGE_rtp2httpd=y
-CONFIG_PACKAGE_apk=y
-EOF
-        elif [[ "${{ matrix.arch }}" == "aarch64_cortex-a72" ]]; then
-          cat > .config <<EOF
-CONFIG_TARGET_armsr=y
-CONFIG_TARGET_armsr_armv8=y
-CONFIG_TARGET_armsr_armv8_DEVICE_generic=y
-CONFIG_ARCH_64BIT=y
-CONFIG_HAS_SUBTARGETS=y
-CONFIG_CPU_TYPE="cortex-a72"
-CONFIG_TARGET_ROOTFS_TARGZ=y
-CONFIG_PACKAGE_rtp2httpd=y
-CONFIG_PACKAGE_apk=y
-EOF
-        fi
-        
-        # 如果存在 luci-app-rtp2httpd，也一并启用
-        if [ -d "package/luci-app-rtp2httpd" ]; then
-          echo 'CONFIG_PACKAGE_luci-app-rtp2httpd=y' >> .config
-          # 添加 LuCI 依赖
-          echo 'CONFIG_PACKAGE_luci=y' >> .config
-        fi
-        
-        # 扩展配置
-        make defconfig
-        
-        # 构建
-        echo "开始编译 rtp2httpd 包..."
-        make package/rtp2httpd/compile -j$(nproc) || make package/rtp2httpd/compile V=s
-        
-        if [ -d "package/luci-app-rtp2httpd" ]; then
-          echo "开始编译 luci-app-rtp2httpd 包..."
-          make package/luci-app-rtp2httpd/compile -j$(nproc) || make package/luci-app-rtp2httpd/compile V=s
-        fi
-        
-        # 创建输出目录
-        mkdir -p ../output/${{ matrix.arch }}
-        
-        # 复制构建产物（同时寻找 ipk 和 apk 格式）
-        echo "查找并复制编译好的包..."
-        find bin/packages/ -name "rtp2httpd*.ipk" -o -name "rtp2httpd*.apk" -o -name "luci-app-rtp2httpd*.ipk" -o -name "luci-app-rtp2httpd*.apk" -type f -exec cp {} ../output/${{ matrix.arch }}/ \;
-        
-        # 列出复制的文件
-        echo "已复制的文件:"
-        ls -la ../output/${{ matrix.arch }}/
-
-    - name: 上传构建产物
-      uses: actions/upload-artifact@v4
-      with:
-        name: rtp2httpd-${{ matrix.arch }}
-        path: output/${{ matrix.arch }}
-        retention-days: 7
-
-    - name: 创建发布版本
-      if: startsWith(github.ref, 'refs/tags/')
-      uses: softprops/action-gh-release@v2
-      with:
-        files: output/**/*
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  monitor-upstream:
-    name: 监控上游仓库更新
-    runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch'
-    steps:
-      - name: 检查上游更新
+      - uses: actions/checkout@v4
+        with:
+          repository: stackia/rtp2httpd
+          
+      - name: Override version number
         run: |
-          # 克隆上游仓库
-          git clone https://github.com/stackia/rtp2httpd.git
-          cd rtp2httpd
+          RELEASE_TAG="${{ github.ref_name }}"
+          RELEASE_VERSION="${RELEASE_TAG#v}"
+          # 如果不是从 release 触发，使用日期作为版本号
+          if [[ "$RELEASE_TAG" == "$RELEASE_VERSION" ]]; then
+            RELEASE_VERSION="$(date +%Y%m%d)"
+          fi
+          sed -i "s/1\.0\.0/${RELEASE_VERSION}/g" openwrt-support/rtp2httpd/Makefile openwrt-support/luci-app-rtp2httpd/Makefile configure.ac
           
-          # 获取上游 openwrt-support 目录的最新提交
-          LAST_COMMIT=$(git log -1 --format=%H -- openwrt-support)
-          LAST_COMMIT_DATE=$(git log -1 --format=%cd --date=iso -- openwrt-support)
+      - name: Move src to openwrt-support
+        run: mv openwrt-support ../ && mkdir ../openwrt-support/rtp2httpd/src && mv ./* ../openwrt-support/rtp2httpd/src && mv ../openwrt-support ./
+        
+      - name: Build
+        uses: openwrt/gh-action-sdk@v7
+        env:
+          ARCH: ${{ matrix.arch }}-${{ matrix.sdk }}
+          FEED_DIR: ${{ github.workspace }}/openwrt-support
+          SDK_SRC: immortalwrt
+          NO_SHFMT_CHECK: true
+          PACKAGES: ${{ matrix.arch == 'x86_64' && 'luci-app-rtp2httpd' || 'rtp2httpd' }}
+          BUILD_APK: true  # 启用 APK 构建而不是 IPK
           
-          echo "上游仓库 openwrt-support 最新提交: $LAST_COMMIT"
-          echo "提交日期: $LAST_COMMIT_DATE"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.arch }}-apk-packages
+          path: bin/packages/${{ matrix.arch }}/action/*.apk
           
-          # 触发仓库分发事件以自动更新
-          curl -X POST \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            https://api.github.com/repos/${{ github.repository }}/dispatches \
-            -d '{"event_type":"stackia_rtp2httpd_update"}'
+      - name: Upload to release assets
+        if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
+        run: |
+          # 如果是从标签触发则上传到对应的 release
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            TAG="${{ github.ref_name }}"
+            gh release upload --repo ${{ github.repository }} $TAG bin/packages/${{ matrix.arch }}/action/*.apk
+          else
+            # 如果是手动触发或 push 触发则创建新的 release
+            RELEASE_DATE="$(date +%Y%m%d)"
+            RELEASE_NAME="Build-${RELEASE_DATE}"
+            gh release create "build-${RELEASE_DATE}" --title "${RELEASE_NAME}" --repo ${{ github.repository }} bin/packages/${{ matrix.arch }}/action/*.apk
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
