@@ -88,9 +88,13 @@ jobs:
             echo "这是一个自动生成的构建版本。APK 文件可能未能正确生成，请检查工作流日志。" > README.md
           fi
           
+          # 获取当前日期和时间，格式为YYYY.MM.DD-HHMM
+          CURRENT_DATETIME=$(date '+%Y.%m.%d-%H%M')
+          
           # 如果是从标签触发则上传到对应的 release
           if [[ "${{ github.ref }}" == refs/tags/* ]]; then
             TAG="${{ github.ref_name }}"
+            RELEASE_NAME="rtp2httpd-${CURRENT_DATETIME}"
             
             # 检查 release 是否已存在
             if gh release view $TAG --repo ${{ github.repository }} &>/dev/null; then
@@ -98,13 +102,13 @@ jobs:
               gh release upload --repo ${{ github.repository }} $TAG $APK_FILES --clobber
             else
               echo "Creating new release $TAG"
-              gh release create $TAG --repo ${{ github.repository }} $APK_FILES --generate-notes
+              gh release create $TAG --title "${RELEASE_NAME}" --repo ${{ github.repository }} $APK_FILES --generate-notes
             fi
           else
             # 对于手动触发或 push 触发，使用日期作为标记
             RELEASE_DATE="${{ steps.release_date.outputs.date }}"
             RELEASE_TAG="build-${RELEASE_DATE}"
-            RELEASE_NAME="Build-${RELEASE_DATE}"
+            RELEASE_NAME="rtp2httpd-${CURRENT_DATETIME}"
             
             # 检查 release 是否已存在
             if gh release view $RELEASE_TAG --repo ${{ github.repository }} &>/dev/null; then
