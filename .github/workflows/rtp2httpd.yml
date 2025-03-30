@@ -91,14 +91,21 @@ jobs:
           CONTAINER: openwrt/sdk
           
       - name: Upload APK files directly to release
-        run: |
-          APK_FILES=$(find bin/packages/${{ matrix.arch }}/action/ -name "*.apk" -type f)
-          if [ -n "$APK_FILES" ]; then
-            gh release upload --repo ${{ github.repository }} ${{ needs.create_release.outputs.release_tag }} $APK_FILES --clobber
-          else
-            echo "Warning: No APK files found to upload"
-            echo "This is an automatically generated build. No APK files were generated." > build-issue.md
-            gh release upload --repo ${{ github.repository }} ${{ needs.create_release.outputs.release_tag }} build-issue.md --clobber
-          fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  run: |
+    echo "Searching for APK files in bin/packages/${{ matrix.arch }}/action/"
+    ls -la bin/packages/${{ matrix.arch }}/action/ || echo "Directory does not exist or is empty"
+    
+    # 先检查文件是否存在      
+    if find bin/packages/${{ matrix.arch }}/action/ -name "*.apk" -type f | grep -q .; then
+      echo "Found APK files, uploading to release..."
+      # 列出找到的文件
+      find bin/packages/${{ matrix.arch }}/action/ -name "*.apk" -type f
+      # 使用xargs确保文件名正确传递给gh命令
+      find bin/packages/${{ matrix.arch }}/action/ -name "*.apk" -type f -print0 | xargs -0 -I{} gh release upload --repo ${{ github.repository }} ${{ needs.create_release.outputs.release_tag }} "{}" --clobber
+    else
+      echo "Warning: No APK files found to upload"
+      echo "This is an automatically generated build. No APK files were generated." > build-issue.md
+      gh release upload --repo ${{ github.repository }} ${{ needs.create_release.outputs.release_tag }} build-issue.md --clobber
+    fi
+  env:
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
