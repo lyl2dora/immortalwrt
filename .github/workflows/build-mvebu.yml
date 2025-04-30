@@ -6,7 +6,7 @@ on:
   repository_dispatch:  # 允许通过 API 触发工作流
   workflow_dispatch:    # 允许手动在 GitHub 界面触发工作流
   schedule:
-    - cron: '0 20 */2 * *'  # 每2天 UTC 20:00 运行 (北京时间凌晨 4:00)
+    - cron: '0 20 */7 * *'  # 每2天 UTC 20:00 运行 (北京时间凌晨 4:00)
 # 添加这个权限配置
 permissions:
   contents: write    # 用于发布版本和提交代码
