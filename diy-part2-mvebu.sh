@@ -75,4 +75,16 @@ config ddns-go 'config'
 EOF
 
 echo "已创建 ddns-go 自定义配置文件，并设置为自动启动"
+
+mkdir -p files/etc/ddns-go
+
+# 从环境变量获取配置并写入 config.yaml
+if [ -n "$DDNS_M902" ]; then
+    echo "$DDNS_M902" > files/etc/ddns-go/config.yaml
+    # 确保文件权限正确
+    echo "chmod 644 /etc/ddns-go/config.yaml" >> files/etc/uci-defaults/99-ddns-go-config
+    echo "创建 ddns-go 配置文件成功"
+else
+    echo "警告: 未找到 DDNS_M902 环境变量，无法创建 ddns-go 配置文件"
+fi
 # 如果需要，还可以添加其他修改
