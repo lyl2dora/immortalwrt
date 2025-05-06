@@ -164,6 +164,9 @@ jobs:
       env:
         PPPOE_USERNAME1: ${{ secrets.PPPOE_USERNAME1 }}
         PPPOE_PASSWORD1: ${{ secrets.PPPOE_PASSWORD1 }}
+        NETWORK_CONFIG_MVEBU: ${{ secrets.NETWORK_CONFIG_MVEBU }}
+        FIREWALL_CONFIG_MVEBU: ${{ secrets.FIREWALL_CONFIG_MVEBU }}
+        DHCP_CONFIG_MVEBU: ${{ secrets.DHCP_CONFIG_MVEBU }}
       run: |
         # 如果存在自定义文件，则移动到 immortalwrt/files 目录
         [ -e files ] && mv files immortalwrt/files
