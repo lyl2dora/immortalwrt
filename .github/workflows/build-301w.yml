@@ -167,6 +167,7 @@ jobs:
         NETWORK_CONFIG_301W: ${{ secrets.NETWORK_CONFIG_301W }}
         FIREWALL_CONFIG_301W: ${{ secrets.FIREWALL_CONFIG_301W }}
         DHCP_CONFIG_301W: ${{ secrets.DHCP_CONFIG_301W }}
+        UPDATE_ROUTE: ${{ secrets.UPDATE_ROUTE }}
       run: |
         # 如果存在自定义文件，则移动到 immortalwrt/files 目录
         [ -e files ] && mv files immortalwrt/files
