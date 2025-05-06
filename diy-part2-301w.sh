@@ -21,24 +21,24 @@ echo 'Creating custom network config files...'
 mkdir -p files/etc/config/
 
 # 写入自定义网络配置
-if [ -n "$NETWORK_CONFIG_MVEBU" ]; then
-  echo "$NETWORK_CONFIG_MVEBU" > files/etc/config/network
+if [ -n "$NETWORK_CONFIG_301W" ]; then
+  echo "$NETWORK_CONFIG_301W" > files/etc/config/network
   echo "Custom network config created."
 else
   echo "Warning: NETWORK_CONFIG_MVEBU is not set."
 fi
 
 # 写入自定义防火墙配置
-if [ -n "$FIREWALL_CONFIG_MVEBU" ]; then
-  echo "$FIREWALL_CONFIG_MVEBU" > files/etc/config/firewall
+if [ -n "$FIREWALL_CONFIG_301W" ]; then
+  echo "$FIREWALL_CONFIG_301W" > files/etc/config/firewall
   echo "Custom firewall config created."
 else
   echo "Warning: FIREWALL_CONFIG_MVEBU is not set."
 fi
 
 # 写入自定义DHCP配置
-if [ -n "$DHCP_CONFIG_MVEBU" ]; then
-  echo "$DHCP_CONFIG_MVEBU" > files/etc/config/dhcp
+if [ -n "$DHCP_CONFIG_301W" ]; then
+  echo "$DHCP_CONFIG_301W" > files/etc/config/dhcp
   echo "Custom DHCP config created."
 else
   echo "Warning: DHCP_CONFIG_MVEBU is not set."
@@ -81,8 +81,8 @@ mkdir -p files/etc/ddns-go
 mkdir -p files/etc/uci-defaults
 
 # 从环境变量获取配置并写入 config.yaml
-if [ -n "$DDNS_M902" ]; then
-    echo "$DDNS_M902" > files/etc/ddns-go/config.yaml
+if [ -n "$DDNS_301W" ]; then
+    echo "$DDNS_301W" > files/etc/ddns-go/config.yaml
     # 确保文件权限正确
     cat > files/etc/uci-defaults/99-ddns-go-config << EOF
 #!/bin/sh
