@@ -283,12 +283,19 @@ jobs:
       id: tag
       if: env.UPLOAD_RELEASE == 'true' && !cancelled()
       run: |
-        # 使用日期时间作为发布标签
-        echo "release_tag=$(date +"%Y.%m.%d-%H%M")" >> $GITHUB_OUTPUT
+        # 直接设置架构名称（在不同的工作流文件中设置不同的值）
+        ARCH="mvebu"  # 在 mvebu 工作流中
+        # ARCH="x86"  # 在 x86 工作流中取消注释此行，注释上面的行
+    
+        # 使用日期时间和架构信息作为发布标签
+        echo "release_tag=${ARCH}-$(date +"%Y.%m.%d-%H%M")" >> $GITHUB_OUTPUT
+    
         # 创建发布说明文件
         touch release.txt
+        echo "架构: ${ARCH}" >> release.txt
         [ -s DEVICE_NAME ] && echo "设备: $(cat DEVICE_NAME)" >> release.txt
         echo "编译时间: $(date +"%Y-%m-%d %H:%M:%S")" >> release.txt
+    
         # 添加源代码提交信息
         cd /workdir/immortalwrt
         echo "源代码版本: $(git rev-parse --short HEAD)" >> $GITHUB_WORKSPACE/release.txt
