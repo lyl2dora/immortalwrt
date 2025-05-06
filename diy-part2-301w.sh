@@ -46,6 +46,10 @@ fi
 
 # 写入自定义路由更新脚本到hotplug.d目录
 if [ -n "$UPDATE_ROUTE" ]; then
+  # 先创建必要的目录结构
+  mkdir -p files/etc/hotplug.d/iface
+  
+  # 然后写入文件
   echo "$UPDATE_ROUTE" > files/etc/hotplug.d/iface/99-update-route
   chmod 755 files/etc/hotplug.d/iface/99-update-route  # 设置为可执行权限
   echo "Custom route update script created."
