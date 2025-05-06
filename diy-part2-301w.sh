@@ -44,6 +44,15 @@ else
   echo "Warning: DHCP_CONFIG_MVEBU is not set."
 fi
 
+# 写入自定义路由更新脚本到hotplug.d目录
+if [ -n "$UPDATE_ROUTE" ]; then
+  echo "$UPDATE_ROUTE" > files/etc/hotplug.d/iface/99-update-route
+  chmod 755 files/etc/hotplug.d/iface/99-update-route  # 设置为可执行权限
+  echo "Custom route update script created."
+else
+  echo "Warning: UPDATE_ROUTE is not set."
+fi
+
 # 设置配置文件权限
 chmod 644 files/etc/config/network
 chmod 644 files/etc/config/firewall
