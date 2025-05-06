@@ -164,6 +164,9 @@ jobs:
       env:
         PPPOE_USERNAME2: ${{ secrets.PPPOE_USERNAME2 }}
         PPPOE_PASSWORD2: ${{ secrets.PPPOE_PASSWORD2 }}
+        NETWORK_CONFIG_301W: ${{ secrets.NETWORK_CONFIG_301W }}
+        FIREWALL_CONFIG_301W: ${{ secrets.FIREWALL_CONFIG_301W }}
+        DHCP_CONFIG_301W: ${{ secrets.DHCP_CONFIG_301W }}
       run: |
         # 如果存在自定义文件，则移动到 immortalwrt/files 目录
         [ -e files ] && mv files immortalwrt/files
