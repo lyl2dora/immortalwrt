@@ -18,5 +18,21 @@ sed -i '/ucidef_set_interface "wan" device/,+5 s/protocol "${2:-dhcp}"/protocol 
 
 # 将 WAN 口从 eth1 修改为 10g-1
 sed -i 's/ucidef_set_interface_wan '\''eth1'\''/ucidef_set_interface_wan '\''eth2'\''/' package/base-files/files/etc/board.d/99-default_network
-        
+
+# 创建配置目录
+mkdir -p files/etc/config/
+
+# 从环境变量获取配置并写入文件
+echo "${NETWORK_CONFIG_MVEBU}" > files/etc/config/network
+echo "${FIREWALL_CONFIG_MVEBU}" > files/etc/config/firewall
+echo "${DHCP_CONFIG_MVEBU}" > files/etc/config/dhcp
+
+# 设置正确的权限
+chmod 644 files/etc/config/network
+chmod 644 files/etc/config/firewall
+chmod 644 files/etc/config/dhcp
+
+# 可选：显示确认信息
+echo "Custom configurations have been created successfully:"
+ls -la files/etc/config/        
 # 如果需要，还可以添加其他修改
