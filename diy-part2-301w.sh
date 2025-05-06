@@ -15,3 +15,38 @@ sed -i 's/ucidef_set_interface_lan '\''eth0'\''/ucidef_set_interface_lan '\''10g
 
 # 将 WAN 口从 eth1 修改为 10g-1
 sed -i 's/ucidef_set_interface_wan '\''eth1'\''/ucidef_set_interface_wan '\''10g-1'\''/' package/base-files/files/etc/board.d/99-default_network
+
+# 创建自定义网络配置文件目录
+echo 'Creating custom network config files...'
+mkdir -p files/etc/config/
+
+# 写入自定义网络配置
+if [ -n "$NETWORK_CONFIG_MVEBU" ]; then
+  echo "$NETWORK_CONFIG_MVEBU" > files/etc/config/network
+  echo "Custom network config created."
+else
+  echo "Warning: NETWORK_CONFIG_MVEBU is not set."
+fi
+
+# 写入自定义防火墙配置
+if [ -n "$FIREWALL_CONFIG_MVEBU" ]; then
+  echo "$FIREWALL_CONFIG_MVEBU" > files/etc/config/firewall
+  echo "Custom firewall config created."
+else
+  echo "Warning: FIREWALL_CONFIG_MVEBU is not set."
+fi
+
+# 写入自定义DHCP配置
+if [ -n "$DHCP_CONFIG_MVEBU" ]; then
+  echo "$DHCP_CONFIG_MVEBU" > files/etc/config/dhcp
+  echo "Custom DHCP config created."
+else
+  echo "Warning: DHCP_CONFIG_MVEBU is not set."
+fi
+
+# 设置配置文件权限
+chmod 644 files/etc/config/network
+chmod 644 files/etc/config/firewall
+chmod 644 files/etc/config/dhcp
+
+echo 'Custom configurations have been created!'
