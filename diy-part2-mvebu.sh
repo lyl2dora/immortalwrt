@@ -55,7 +55,7 @@ if [ -n "$UPDATE_ROUTE" ]; then
   # 然后写入文件
   echo "$UPDATE_ROUTE" > files/etc/hotplug.d/iface/99-update-route
   chmod 755 files/etc/hotplug.d/iface/99-update-route  # 设置为可执行权限
-  echo "Custom route update script created."
+  echo "tr069路由配置成功."
 else
   echo "Warning: UPDATE_ROUTE is not set."
 fi
@@ -67,28 +67,34 @@ chmod 644 files/etc/config/dhcp
 
 echo 'Custom configurations have been created!'
 
-# 创建自定义目录结构
-mkdir -p files/etc/config
-
 # 创建或修改 ddns-go 配置文件
+mkdir -p files/etc/config
 cat > files/etc/config/ddns-go << EOF
 config ddns-go 'config'
 	option enabled '1'
 	option listen '[::]:9876'
 	option ttl '300'
 EOF
-
 echo "已创建 ddns-go 自定义配置文件，并设置为自动启动"
 
+# 创建 ddns-go 配置目录
 mkdir -p files/etc/ddns-go
+
+# 创建 uci-defaults 目录
+mkdir -p files/etc/uci-defaults
 
 # 从环境变量获取配置并写入 config.yaml
 if [ -n "$DDNS_M902" ]; then
     echo "$DDNS_M902" > files/etc/ddns-go/config.yaml
     # 确保文件权限正确
-    echo "chmod 644 /etc/ddns-go/config.yaml" >> files/etc/uci-defaults/99-ddns-go-config
+    cat > files/etc/uci-defaults/99-ddns-go-config << EOF
+#!/bin/sh
+chmod 644 /etc/ddns-go/config.yaml
+chown ddns-go:ddns-go /etc/ddns-go/config.yaml 2>/dev/null || true
+exit 0
+EOF
+    chmod 755 files/etc/uci-defaults/99-ddns-go-config
     echo "创建 ddns-go 配置文件成功"
 else
     echo "警告: 未找到 DDNS_M902 环境变量，无法创建 ddns-go 配置文件"
 fi
-# 如果需要，还可以添加其他修改
