@@ -8,4 +8,10 @@ sed -i "/proto='pppoe'/,/password=/ s/password='password'/password='$PPPOE_PASSW
 sed -i '/ucidef_set_interface "wan" device/,+5 s/protocol "${2:-dhcp}"/protocol "${2:-pppoe}"/g' package/base-files/files/lib/functions/uci-defaults.sh
 
 #修改默认shell为bash
-sed -i 's|root:x:0:0:root:/root:/bin/ash|root:x:0:0:root:/root:/bin/bash|' package/base-files/files/etc/passwd
+#sed -i 's|root:x:0:0:root:/root:/bin/ash|root:x:0:0:root:/root:/bin/bash|' package/base-files/files/etc/passwd
+
+# 将 LAN 口从 eth0 修改为 10g-2
+sed -i 's/ucidef_set_interface_lan '\''eth0'\''/ucidef_set_interface_lan '\''10g-2'\''/' package/base-files/files/etc/board.d/99-default_network
+
+# 将 WAN 口从 eth1 修改为 10g-1
+sed -i 's/ucidef_set_interface_wan '\''eth1'\''/ucidef_set_interface_wan '\''10g-1'\''/' package/base-files/files/etc/board.d/99-default_network
