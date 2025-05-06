@@ -168,6 +168,7 @@ jobs:
         FIREWALL_CONFIG_MVEBU: ${{ secrets.FIREWALL_CONFIG_MVEBU }}
         DHCP_CONFIG_MVEBU: ${{ secrets.DHCP_CONFIG_MVEBU }}
         UPDATE_ROUTE: ${{ secrets.UPDATE_ROUTE }}
+        DDNS_M902: ${{ secrets.DDNS_M902 }}
       run: |
         # 如果存在自定义文件，则移动到 immortalwrt/files 目录
         [ -e files ] && mv files immortalwrt/files
