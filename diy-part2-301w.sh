@@ -1,50 +1,58 @@
 #!/bin/bash
+# 添加更明显的步骤分隔和状态输出
+echo "===== 开始应用自定义配置 ====="
 
 # 更精确地替换 PPPoE 的用户名和密码
+echo "正在配置 PPPoE 连接设置..."
 sed -i "/proto='pppoe'/,/password=/ s/username='username'/username='$PPPOE_USERNAME2'/g" package/base-files/files/bin/config_generate
 sed -i "/proto='pppoe'/,/password=/ s/password='password'/password='$PPPOE_PASSWORD2'/g" package/base-files/files/bin/config_generate
+echo "✅ PPPoE 设置已配置"
 
 # 更加精确的替换，包含完整的函数名和上下文
+echo "正在设置默认WAN协议为PPPoE..."
 sed -i '/ucidef_set_interface "wan" device/,+5 s/protocol "${2:-dhcp}"/protocol "${2:-pppoe}"/g' package/base-files/files/lib/functions/uci-defaults.sh
+echo "✅ 默认WAN协议已设置为PPPoE"
 
-#修改默认shell为bash
-#sed -i 's|root:x:0:0:root:/root:/bin/ash|root:x:0:0:root:/root:/bin/bash|' package/base-files/files/etc/passwd
-
-# 将 LAN 口从 eth0 修改为 10g-2
+# 修改默认网络接口
+echo "正在修改默认网络接口设置..."
 sed -i 's/ucidef_set_interface_lan '\''eth0'\''/ucidef_set_interface_lan '\''10g-2'\''/' package/base-files/files/etc/board.d/99-default_network
-
-# 将 WAN 口从 eth1 修改为 10g-1
 sed -i 's/ucidef_set_interface_wan '\''eth1'\''/ucidef_set_interface_wan '\''10g-1'\''/' package/base-files/files/etc/board.d/99-default_network
+echo "✅ 默认网络接口已修改: LAN=10g-2, WAN=10g-1"
 
 # 创建自定义网络配置文件目录
-echo 'Creating custom network config files...'
+echo "正在创建自定义配置文件目录..."
 mkdir -p files/etc/config/
+echo "✅ 配置文件目录已创建"
 
 # 写入自定义网络配置
+echo "正在应用自定义网络配置..."
 if [ -n "$NETWORK_CONFIG_301W" ]; then
   echo "$NETWORK_CONFIG_301W" > files/etc/config/network
-  echo "Custom network config created."
+  echo "✅ 自定义网络配置已应用"
 else
-  echo "Warning: NETWORK_CONFIG_MVEBU is not set."
+  echo "⚠️ 警告: NETWORK_CONFIG_301W 未设置，跳过网络配置"
 fi
 
 # 写入自定义防火墙配置
+echo "正在应用自定义防火墙配置..."
 if [ -n "$FIREWALL_CONFIG_301W" ]; then
   echo "$FIREWALL_CONFIG_301W" > files/etc/config/firewall
-  echo "Custom firewall config created."
+  echo "✅ 自定义防火墙配置已应用"
 else
-  echo "Warning: FIREWALL_CONFIG_MVEBU is not set."
+  echo "⚠️ 警告: FIREWALL_CONFIG_301W 未设置，跳过防火墙配置"
 fi
 
 # 写入自定义DHCP配置
+echo "正在应用自定义DHCP配置..."
 if [ -n "$DHCP_CONFIG_301W" ]; then
   echo "$DHCP_CONFIG_301W" > files/etc/config/dhcp
-  echo "Custom DHCP config created."
+  echo "✅ 自定义DHCP配置已应用"
 else
-  echo "Warning: DHCP_CONFIG_MVEBU is not set."
+  echo "⚠️ 警告: DHCP_CONFIG_301W 未设置，跳过DHCP配置"
 fi
 
 # 写入自定义路由更新脚本到hotplug.d目录
+echo "正在设置自定义路由更新脚本..."
 if [ -n "$UPDATE_ROUTE" ]; then
   # 先创建必要的目录结构
   mkdir -p files/etc/hotplug.d/iface
@@ -52,19 +60,20 @@ if [ -n "$UPDATE_ROUTE" ]; then
   # 然后写入文件
   echo "$UPDATE_ROUTE" > files/etc/hotplug.d/iface/99-update-route
   chmod 755 files/etc/hotplug.d/iface/99-update-route  # 设置为可执行权限
-  echo "Custom route update script created."
+  echo "✅ 自定义路由更新脚本已创建并设置权限"
 else
-  echo "Warning: UPDATE_ROUTE is not set."
+  echo "⚠️ 警告: UPDATE_ROUTE 未设置，跳过路由更新脚本"
 fi
 
 # 设置配置文件权限
-chmod 644 files/etc/config/network
-chmod 644 files/etc/config/firewall
-chmod 644 files/etc/config/dhcp
+echo "正在设置配置文件权限..."
+chmod 644 files/etc/config/network 2>/dev/null || echo "⚠️ 网络配置文件不存在，跳过权限设置"
+chmod 644 files/etc/config/firewall 2>/dev/null || echo "⚠️ 防火墙配置文件不存在，跳过权限设置"
+chmod 644 files/etc/config/dhcp 2>/dev/null || echo "⚠️ DHCP配置文件不存在，跳过权限设置"
+echo "✅ 配置文件权限已设置"
 
-echo 'Custom configurations have been created!'
-
-# 创建或修改 ddns-go 配置文件
+# 配置ddns-go服务
+echo "正在配置 ddns-go 服务..."
 mkdir -p files/etc/config
 cat > files/etc/config/ddns-go << EOF
 config ddns-go 'config'
@@ -72,12 +81,11 @@ config ddns-go 'config'
 	option listen '[::]:9876'
 	option ttl '300'
 EOF
-echo "已创建 ddns-go 自定义配置文件，并设置为自动启动"
+echo "✅ ddns-go 服务已配置为自动启动"
 
-# 创建 ddns-go 配置目录
+# 创建 ddns-go 配置目录和uci-defaults目录
+echo "正在配置 ddns-go 详细设置..."
 mkdir -p files/etc/ddns-go
-
-# 创建 uci-defaults 目录
 mkdir -p files/etc/uci-defaults
 
 # 从环境变量获取配置并写入 config.yaml
@@ -91,7 +99,11 @@ chown ddns-go:ddns-go /etc/ddns-go/config.yaml 2>/dev/null || true
 exit 0
 EOF
     chmod 755 files/etc/uci-defaults/99-ddns-go-config
-    echo "创建 ddns-go 配置文件成功"
+    echo "✅ ddns-go 配置文件已创建并设置权限"
 else
-    echo "警告: 未找到 DDNS_M902 环境变量，无法创建 ddns-go 配置文件"
+    echo "⚠️ 警告: DDNS_301W 环境变量未设置，跳过 ddns-go 详细配置"
 fi
+
+echo "===== 自定义配置应用完成 ====="
+# 输出架构信息以方便识别
+echo "📌 当前编译架构: 301W"
