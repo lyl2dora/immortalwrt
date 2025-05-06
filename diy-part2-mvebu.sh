@@ -62,4 +62,17 @@ chmod 644 files/etc/config/firewall
 chmod 644 files/etc/config/dhcp
 
 echo 'Custom configurations have been created!'
+
+# 创建自定义目录结构
+mkdir -p files/etc/config
+
+# 创建或修改 ddns-go 配置文件
+cat > files/etc/config/ddns-go << EOF
+config ddns-go 'config'
+	option enabled '1'
+	option listen '[::]:9876'
+	option ttl '300'
+EOF
+
+echo "已创建 ddns-go 自定义配置文件，并设置为自动启动"
 # 如果需要，还可以添加其他修改
