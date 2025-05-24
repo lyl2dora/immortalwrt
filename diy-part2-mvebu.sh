@@ -103,6 +103,20 @@ else
     echo "⚠️ 警告: 未找到 DDNS_M902 环境变量，无法创建 ddns-go 配置文件"
 fi
 
+# 配置 opkg distfeeds.conf
+echo "正在配置 opkg 软件源..."
+mkdir -p files/etc/opkg
+cat > files/etc/opkg/distfeeds.conf << EOF
+src/gz immortalwrt_core https://mirrors.vsean.net/openwrt/releases/24.10-SNAPSHOT/targets/mvebu/cortexa72/packages
+src/gz immortalwrt_base https://mirrors.vsean.net/openwrt/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a72/base
+src/gz immortalwrt_luci https://mirrors.vsean.net/openwrt/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a72/luci
+src/gz immortalwrt_packages https://mirrors.vsean.net/openwrt/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a72/packages
+src/gz immortalwrt_routing https://mirrors.vsean.net/openwrt/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a72/routing
+src/gz immortalwrt_telephony https://mirrors.vsean.net/openwrt/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a72/telephony
+EOF
+chmod 644 files/etc/opkg/distfeeds.conf
+echo "✅ opkg 软件源配置已完成"
+
 echo "===== 自定义配置应用完成 ====="
 # 输出架构信息以方便识别
 echo "📌 当前编译架构: MVEBU (M902)"
