@@ -104,6 +104,20 @@ else
     echo "⚠️ 警告: DDNS_301W 环境变量未设置，跳过 ddns-go 详细配置"
 fi
 
+# 配置 opkg distfeeds.conf
+echo "正在配置 opkg 软件源..."
+mkdir -p files/etc/opkg
+cat > files/etc/opkg/distfeeds.conf << EOF
+src/gz immortalwrt_core https://mirrors.vsean.net/openwrt/releases/24.10-SNAPSHOT/targets/qualcommax/ipq807x/packages
+src/gz immortalwrt_base https://mirrors.vsean.net/openwrt/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a53/base
+src/gz immortalwrt_luci https://mirrors.vsean.net/openwrt/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a53/luci/
+src/gz immortalwrt_packages https://mirrors.vsean.net/openwrt/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a53/packages
+src/gz immortalwrt_routing https://mirrors.vsean.net/openwrt/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a53/routing
+src/gz immortalwrt_telephony https://mirrors.vsean.net/openwrt/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a53/telephony
+EOF
+chmod 644 files/etc/opkg/distfeeds.conf
+echo "✅ opkg 软件源配置已完成"
+
 echo "===== 自定义配置应用完成 ====="
 # 输出架构信息以方便识别
 echo "📌 当前编译架构: 301W"
