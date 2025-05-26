@@ -118,6 +118,27 @@ EOF
 chmod 644 files/etc/opkg/distfeeds.conf
 echo "✅ opkg 软件源配置已完成"
 
+# 写入自定义IGMP Proxy配置
+echo "正在应用自定义IGMP Proxy配置..."
+cat > files/etc/config/igmpproxy << EOF
+config igmpproxy
+	option quickleave 1
+	option verbose 0
+
+config phyint
+	option network 'iptv'
+	option zone 'iptv'
+	option direction 'upstream'
+	list altnet '121.60.0.0/16'
+
+config phyint
+	option network 'lan'
+	option zone 'lan'
+	option direction 'downstream'
+EOF
+chmod 644 files/etc/config/igmpproxy
+echo "✅ 自定义IGMP Proxy配置已应用"
+
 echo "===== 自定义配置应用完成 ====="
 # 输出架构信息以方便识别
 echo "📌 当前编译架构: 301W"
